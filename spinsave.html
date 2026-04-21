@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpinSave — Find the Cheapest Laundromats Near You</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #2563eb;
+      --blue-dk: #1d4ed8;
+      --teal:    #0d9488;
+      --teal-lt: #ccfbf1;
+      --gray-50: #f8fafc;
+      --gray-100:#f1f5f9;
+      --gray-200:#e2e8f0;
+      --gray-500:#64748b;
+      --gray-700:#334155;
+      --gray-900:#0f172a;
+      --white:   #ffffff;
+      --radius:  12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--gray-900);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 64px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.4rem; font-weight: 800; color: var(--blue);
+      text-decoration: none;
+    }
+    .logo-icon { font-size: 1.6rem; }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav ul a { text-decoration: none; color: var(--gray-700); font-weight: 500; font-size: .95rem; }
+    nav ul a:hover { color: var(--blue); }
+    .nav-cta {
+      background: var(--blue); color: var(--white);
+      padding: .5rem 1.2rem; border-radius: 8px;
+      font-weight: 600; text-decoration: none; font-size: .95rem;
+      transition: background .15s;
+    }
+    .nav-cta:hover { background: var(--blue-dk); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 90vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 4rem 5% 3rem;
+      background: linear-gradient(160deg, #eff6ff 0%, #f0fdfa 60%, #fff 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(13,148,136,.08) 0%, transparent 60%),
+                  radial-gradient(circle at 20% 80%, rgba(37,99,235,.07) 0%, transparent 55%);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--teal-lt); color: var(--teal);
+      font-size: .82rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      padding: .35rem .9rem; border-radius: 99px; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 900; line-height: 1.1;
+      color: var(--gray-900);
+      max-width: 820px; margin-bottom: 1.2rem;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--gray-500); max-width: 560px; margin-bottom: 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      background: var(--blue); color: var(--white);
+      padding: .85rem 2rem; border-radius: var(--radius);
+      font-size: 1.05rem; font-weight: 700; text-decoration: none;
+      transition: background .15s, transform .1s; border: none; cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--blue-dk); transform: translateY(-2px); }
+    .btn-secondary {
+      background: transparent; color: var(--blue);
+      padding: .85rem 2rem; border-radius: var(--radius);
+      font-size: 1.05rem; font-weight: 700; text-decoration: none;
+      border: 2px solid var(--blue); transition: .15s;
+    }
+    .btn-secondary:hover { background: #eff6ff; }
+
+    .hero-stats {
+      display: flex; gap: 3rem; flex-wrap: wrap; justify-content: center;
+      margin-top: 4rem; position: relative;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 900; color: var(--blue); }
+    .stat-label { font-size: .85rem; color: var(--gray-500); font-weight: 500; }
+
+    /* ── SOCIAL PROOF STRIP ── */
+    .strip {
+      background: var(--gray-900); color: var(--gray-200);
+      padding: .9rem 5%; text-align: center;
+      font-size: .9rem; letter-spacing: .02em;
+    }
+    .strip strong { color: var(--white); }
+
+    /* ── SECTION BASE ── */
+    section { padding: 5rem 5%; }
+    .section-label {
+      font-size: .82rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--teal); margin-bottom: .5rem;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; line-height: 1.15;
+      max-width: 640px; margin-bottom: 1rem;
+    }
+    .section-sub { color: var(--gray-500); max-width: 520px; font-size: 1.05rem; margin-bottom: 3rem; }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--gray-50); }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; }
+    .step {
+      background: var(--white); border-radius: var(--radius);
+      padding: 2rem; border: 1px solid var(--gray-200);
+      position: relative;
+    }
+    .step-num {
+      width: 40px; height: 40px;
+      background: var(--blue); color: var(--white);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1rem; margin-bottom: 1rem;
+    }
+    .step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .5rem; }
+    .step p { color: var(--gray-500); font-size: .95rem; }
+    .step-icon { font-size: 2rem; margin-bottom: .8rem; }
+
+    /* ── FEATURES ── */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .feature-card {
+      border: 1px solid var(--gray-200); border-radius: var(--radius);
+      padding: 1.8rem; transition: box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,.08); transform: translateY(-3px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p { color: var(--gray-500); font-size: .95rem; }
+    .tag {
+      display: inline-block; background: var(--teal-lt); color: var(--teal);
+      font-size: .75rem; font-weight: 700; padding: .2rem .6rem;
+      border-radius: 99px; margin-top: .8rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    /* ── DEALS PREVIEW ── */
+    .deals { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); color: var(--white); }
+    .deals .section-label { color: #7dd3fc; }
+    .deals .section-title { color: var(--white); }
+    .deals .section-sub { color: #94a3b8; }
+    .deals-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem; }
+    .deal-card {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius); padding: 1.5rem; position: relative; overflow: hidden;
+    }
+    .deal-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--teal));
+    }
+    .deal-discount {
+      font-size: 2.2rem; font-weight: 900; color: #34d399;
+      line-height: 1; margin-bottom: .4rem;
+    }
+    .deal-name { font-size: 1rem; font-weight: 700; color: var(--white); margin-bottom: .3rem; }
+    .deal-location { font-size: .85rem; color: #94a3b8; margin-bottom: .8rem; }
+    .deal-expires { font-size: .78rem; color: #f59e0b; font-weight: 600; }
+    .deal-badge {
+      position: absolute; top: 1rem; right: 1rem;
+      background: #f59e0b; color: var(--gray-900);
+      font-size: .7rem; font-weight: 800; padding: .2rem .5rem;
+      border-radius: 6px; text-transform: uppercase;
+    }
+
+    /* ── TESTIMONIALS ── */
+    .testimonials { background: var(--gray-50); }
+    .testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .testi-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 1.8rem;
+    }
+    .stars { color: #f59e0b; font-size: 1.1rem; margin-bottom: .8rem; }
+    .testi-text { color: var(--gray-700); font-size: .97rem; font-style: italic; margin-bottom: 1.2rem; line-height: 1.7; }
+    .testi-author { display: flex; align-items: center; gap: .8rem; }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; color: var(--white); flex-shrink: 0;
+    }
+    .author-name { font-weight: 700; font-size: .9rem; }
+    .author-sub { font-size: .8rem; color: var(--gray-500); }
+
+    /* ── PRICING ── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; max-width: 860px; margin: 0 auto; }
+    .price-card {
+      border: 2px solid var(--gray-200); border-radius: var(--radius); padding: 2rem;
+      text-align: center; position: relative; transition: .2s;
+    }
+    .price-card.popular {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.1);
+    }
+    .popular-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--blue); color: var(--white);
+      font-size: .75rem; font-weight: 700; padding: .3rem .9rem;
+      border-radius: 99px; white-space: nowrap;
+    }
+    .plan-name { font-size: .9rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gray-500); margin-bottom: .8rem; }
+    .plan-price { font-size: 3rem; font-weight: 900; line-height: 1; margin-bottom: .3rem; }
+    .plan-price sup { font-size: 1.4rem; font-weight: 700; vertical-align: super; }
+    .plan-period { font-size: .85rem; color: var(--gray-500); margin-bottom: 1.5rem; }
+    .plan-features { list-style: none; text-align: left; margin-bottom: 2rem; display: flex; flex-direction: column; gap: .6rem; }
+    .plan-features li { font-size: .95rem; color: var(--gray-700); display: flex; align-items: center; gap: .5rem; }
+    .plan-features li::before { content: '✓'; color: var(--teal); font-weight: 800; }
+    .plan-features li.no::before { content: '✕'; color: var(--gray-200); }
+    .plan-features li.no { color: var(--gray-200); }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+      color: var(--white); text-align: center; padding: 6rem 5%;
+    }
+    .cta-section h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin-bottom: 1rem; }
+    .cta-section p { font-size: 1.1rem; opacity: .85; max-width: 520px; margin: 0 auto 2.5rem; }
+    .email-form { display: flex; gap: .8rem; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+    .email-form input {
+      flex: 1; min-width: 220px; padding: .85rem 1.2rem;
+      border-radius: var(--radius); border: none; font-size: 1rem;
+      outline: none;
+    }
+    .btn-white {
+      background: var(--white); color: var(--blue);
+      padding: .85rem 1.6rem; border-radius: var(--radius);
+      font-size: 1rem; font-weight: 700; border: none; cursor: pointer;
+      transition: .15s; white-space: nowrap;
+    }
+    .btn-white:hover { background: #eff6ff; }
+    .cta-fine { font-size: .8rem; opacity: .7; margin-top: 1rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--gray-900); color: var(--gray-500);
+      padding: 3rem 5% 2rem;
+      display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;
+    }
+    .footer-logo { color: var(--white); font-size: 1.3rem; font-weight: 900; }
+    footer nav { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+    footer nav a { color: var(--gray-500); text-decoration: none; font-size: .9rem; }
+    footer nav a:hover { color: var(--white); }
+    .footer-copy { font-size: .82rem; color: #475569; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav ul { display: none; }
+      .hero-stats { gap: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">
+    <span class="logo-icon">🌀</span>SpinSave
+  </a>
+  <ul>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#deals">Deals</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <a class="nav-cta" href="#cta">Get the App</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">🎉 Now tracking 50,000+ laundromats nationwide</div>
+  <h1>Find the <span>Cheapest Laundromat</span> Near You — Every Time</h1>
+  <p>SpinSave compares prices, surfaces deals, and alerts you to flash sales so you never overpay for laundry again.</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="#cta">Get Early Access — Free</a>
+    <a class="btn-secondary" href="#how">See How It Works</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">$340</div>
+      <div class="stat-label">Average yearly savings</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">50K+</div>
+      <div class="stat-label">Laundromats tracked</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">1,200+</div>
+      <div class="stat-label">Active deals today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4.9★</div>
+      <div class="stat-label">App store rating</div>
+    </div>
+  </div>
+</section>
+
+<!-- STRIP -->
+<div class="strip">
+  Trusted by users in <strong>New York</strong>, <strong>Los Angeles</strong>, <strong>Chicago</strong>, <strong>Houston</strong>, <strong>Phoenix</strong> and 200+ more cities
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-title">Savings in 3 simple steps</h2>
+  <p class="section-sub">No accounts needed to browse. Search, compare, and head straight to the best deal nearby.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">📍</div>
+      <div class="step-num">1</div>
+      <h3>Share your location</h3>
+      <p>Allow location access (or type your zip code) and we'll instantly show every laundromat within your chosen radius.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">💸</div>
+      <div class="step-num">2</div>
+      <h3>Compare real prices</h3>
+      <p>See per-load costs for washers and dryers, machine availability, and any current promotions — all in one view.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🔔</div>
+      <div class="step-num">3</div>
+      <h3>Get deal alerts</h3>
+      <p>Set price drop and flash-sale alerts for your favorite spots. We'll notify you the moment a deal goes live.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🧺</div>
+      <div class="step-num">4</div>
+      <h3>Go & save</h3>
+      <p>Head to the cheapest option with one-tap directions. Track your savings over time right in the app.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything you need to wash smarter</h2>
+  <p class="section-sub">Built for renters, students, travelers — anyone who pays to do laundry.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Live Map View</h3>
+      <p>See all nearby laundromats on an interactive map with color-coded pricing tiers so the cheapest options stand out instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏷️</div>
+      <h3>Real-Time Deal Feed</h3>
+      <p>A live feed of discounts, happy-hour pricing, first-wash-free promos, and limited-time bundle deals updated throughout the day.</p>
+      <span class="tag">Most Popular</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Price History Charts</h3>
+      <p>View how a laundromat's prices have changed over time. Know which days and hours are historically the cheapest.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚙️</div>
+      <h3>Filter by Your Needs</h3>
+      <p>Filter by machine size (XL loads), dryer heat settings, drop-off service, parking, 24/7 access, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <h3>Price Drop Alerts</h3>
+      <p>Set a target price and get push or email alerts the moment any nearby laundromat hits your number.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⭐</div>
+      <h3>Verified Reviews</h3>
+      <p>Read crowd-sourced reviews focused on cleanliness, machine reliability, safety, and — of course — whether the deal was real.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DEALS PREVIEW -->
+<section class="deals" id="deals">
+  <div class="section-label">Live Deals</div>
+  <h2 class="section-title">Today's hottest laundromat deals</h2>
+  <p class="section-sub">A small taste of what SpinSave members see right now.</p>
+  <div class="deals-cards">
+    <div class="deal-card">
+      <span class="deal-badge">Flash</span>
+      <div class="deal-discount">50% OFF</div>
+      <div class="deal-name">Fresh &amp; Clean Laundromat</div>
+      <div class="deal-location">📍 Brooklyn, NY · 0.4 mi</div>
+      <div class="deal-expires">⏱ Ends tonight at midnight</div>
+    </div>
+    <div class="deal-card">
+      <div class="deal-discount">$0.99</div>
+      <div class="deal-name">Suds &amp; Spin Center</div>
+      <div class="deal-location">📍 Austin, TX · 1.1 mi</div>
+      <div class="deal-expires">🗓 Per wash, every Tuesday</div>
+    </div>
+    <div class="deal-card">
+      <span class="deal-badge">New</span>
+      <div class="deal-discount">1st Free</div>
+      <div class="deal-name">BubbleWave Laundry</div>
+      <div class="deal-location">📍 Denver, CO · 0.7 mi</div>
+      <div class="deal-expires">🎁 First wash free for new customers</div>
+    </div>
+    <div class="deal-card">
+      <div class="deal-discount">30% OFF</div>
+      <div class="deal-name">QuickSpin Express</div>
+      <div class="deal-location">📍 Chicago, IL · 0.9 mi</div>
+      <div class="deal-expires">⏱ Happy hour 10am–1pm daily</div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="section-label">Testimonials</div>
+  <h2 class="section-title">Real people, real savings</h2>
+  <p class="section-sub">Over 120,000 people have already cut their laundry costs with SpinSave.</p>
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="stars">★★★★★</div>
+      <p class="testi-text">"I was spending nearly $80 a month at a laundromat two blocks away. SpinSave showed me a place six blocks further with Tuesday promos — I'm down to $32/month. Genuinely life-changing for a broke grad student."</p>
+      <div class="testi-author">
+        <div class="avatar" style="background:#2563eb">JT</div>
+        <div>
+          <div class="author-name">Jordan T.</div>
+          <div class="author-sub">Graduate student · Boston, MA</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="stars">★★★★★</div>
+      <p class="testi-text">"The price drop alert is the killer feature. I set a $1.25 wash threshold, got a notification the next morning, and was in and out before the deal expired. This app just gets it."</p>
+      <div class="testi-author">
+        <div class="avatar" style="background:#0d9488">MR</div>
+        <div>
+          <div class="author-name">Maria R.</div>
+          <div class="author-sub">Freelance designer · Los Angeles, CA</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="stars">★★★★★</div>
+      <p class="testi-text">"Moved to a new neighborhood and had no idea where to go. SpinSave mapped six options within walking distance and I picked the cheapest one with XL machines in under two minutes."</p>
+      <div class="testi-author">
+        <div class="avatar" style="background:#7c3aed">DS</div>
+        <div>
+          <div class="author-name">David S.</div>
+          <div class="author-sub">Renter · Chicago, IL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div style="text-align:center;">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title" style="margin:0 auto 1rem;">Simple, transparent pricing</h2>
+    <p class="section-sub" style="margin:0 auto 3rem;">Start free. Upgrade only when you want more.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price"><sup>$</sup>0</div>
+      <div class="plan-period">forever</div>
+      <ul class="plan-features">
+        <li>Map view (5-mile radius)</li>
+        <li>Basic price comparison</li>
+        <li>Public deals &amp; promos</li>
+        <li class="no">Price drop alerts</li>
+        <li class="no">Price history charts</li>
+        <li class="no">Unlimited radius</li>
+      </ul>
+      <a class="btn-secondary" href="#cta" style="display:block;text-align:center;">Start Free</a>
+    </div>
+    <div class="price-card popular">
+      <div class="popular-badge">Most Popular</div>
+      <div class="plan-name">Saver</div>
+      <div class="plan-price"><sup>$</sup>3</div>
+      <div class="plan-period">per month · cancel anytime</div>
+      <ul class="plan-features">
+        <li>Everything in Free</li>
+        <li>Unlimited map radius</li>
+        <li>Price drop &amp; flash-sale alerts</li>
+        <li>Price history charts</li>
+        <li>Savings tracker dashboard</li>
+        <li class="no">Priority deal access</li>
+      </ul>
+      <a class="btn-primary" href="#cta" style="display:block;text-align:center;">Get Saver</a>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">Power</div>
+      <div class="plan-price"><sup>$</sup>7</div>
+      <div class="plan-period">per month · cancel anytime</div>
+      <ul class="plan-features">
+        <li>Everything in Saver</li>
+        <li>Priority access to flash deals</li>
+        <li>Multi-city tracking</li>
+        <li>API access (developers)</li>
+        <li>Early access to new features</li>
+      </ul>
+      <a class="btn-secondary" href="#cta" style="display:block;text-align:center;">Get Power</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <h2>Stop overpaying for laundry.</h2>
+  <p>Join the waitlist and get 3 months of Saver free when we launch in your city.</p>
+  <form class="email-form" onsubmit="handleSubmit(event)">
+    <input type="email" id="emailInput" placeholder="you@email.com" required />
+    <button type="submit" class="btn-white">Get Early Access</button>
+  </form>
+  <p class="cta-fine">No spam. No credit card. Unsubscribe anytime.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🌀 SpinSave</div>
+  <nav>
+    <a href="#">About</a>
+    <a href="#">Blog</a>
+    <a href="#">For Businesses</a>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms of Service</a>
+    <a href="#">Contact</a>
+  </nav>
+  <p class="footer-copy">© 2026 SpinSave, Inc. All rights reserved.</p>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    e.preventDefault();
+    const input = document.getElementById('emailInput');
+    const btn = e.target.querySelector('button');
+    btn.textContent = '🎉 You\'re on the list!';
+    btn.style.background = '#d1fae5';
+    btn.style.color = '#065f46';
+    input.value = '';
+    input.disabled = true;
+    btn.disabled = true;
+  }
+</script>
+
+</body>
+</html>
