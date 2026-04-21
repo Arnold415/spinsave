@@ -66,13 +66,21 @@ The only script is `handleSubmit(event)` at the bottom of the file, which handle
 
 The repo is hosted at **https://github.com/Arnold415/spinsave**.
 
-After every meaningful change:
+**Commit and push after every meaningful unit of work.** Do not batch multiple unrelated changes into one commit. The goal is that GitHub always reflects the current state of the project so work is never lost and any change can be reverted cleanly.
+
+After each change:
 
 ```bash
 git add spinsave.html          # or other changed files
 git commit -m "concise message describing what changed and why"
 git push
 ```
+
+When to commit:
+- After completing any discrete feature or section change
+- After a content update (copy, stats, deal cards, testimonials, etc.)
+- After a styling change that is visually complete
+- Before and after any significant refactor
 
 Commit message conventions:
 - Present tense, imperative mood: `"Add testimonials section"` not `"Added"`
